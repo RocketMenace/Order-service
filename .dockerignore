@@ -1,0 +1,80 @@
+# === Version Control & IDE ===
+.git/
+.gitignore
+.gitattributes
+.github/
+.idea/
+.vscode/
+
+# === Python Specific ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+pip-selfcheck.json
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# === Dependency & Lock Files ===
+poetry.lock
+Pipfile.lock
+requirements-dev.txt
+dev-requirements.txt
+*.egg-info/
+*.egg
+dist/
+build/
+.coverage
+
+# === Environment & Secrets ===
+.env
+.envs/
+.env.*
+*.env
+secrets/
+credentials.*
+docker-compose*.yml
+
+# === Build & CI Files ===
+Dockerfile
+Dockerfile.*
+.dockerignore
+compose.yml
+docker-compose*
+.dockerenv
+.pre-commit-config.yaml
+
+# === Logs & Temp Files ===
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === Documentation ===
+docs/
+DOCS/
+README.md
+CHANGELOG.md
+
+# === Pytest & Testing ===
+**/pytest_cache/
+**/*.pytest_cache/
+test/
+tests/
+**/test_*.py
+**/*_test.py
+**/conftest.py
+**/pytest.ini
+**/tox.ini
+**/coverage.xml
+**/.coveragerc
+**/htmlcov/
+**/.pytestrc
+**/pytest-report.xml

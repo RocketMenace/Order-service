@@ -1,0 +1,28 @@
+[project]
+name = "order-service"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "adaptix>=3.0.0b11",
+    "aiokafka>=0.13.0",
+    "alembic>=1.17.2",
+    "asyncpg>=0.31.0",
+    "dishka>=1.7.2",
+    "fastapi[standard]>=0.127.0",
+    "httptools>=0.7.1",
+    "httpx>=0.28.1",
+    "psycopg2-binary>=2.9.11",
+    "pydantic-settings>=2.12.0",
+    "sqlalchemy>=2.0.45",
+    "structlog>=25.5.0",
+    "uvicorn>=0.40.0",
+    "uvloop>=0.22.1",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pre-commit>=4.5.1",
+    "ruff>=0.14.10",
+]
