@@ -8,6 +8,7 @@ from app.presentation.api.v1.routers.router import router
 from app.infrastructure.outbox_worker import (
     OutboxPaymentsWorker,
     OutboxNotificationsWorker,
+    OutboxShippingWorker
 )
 from app.infrastructure.inbox_worker import InboxWorker
 from app.presentation.exc_handlers import register_error_handlers
@@ -20,16 +21,20 @@ async def lifespan(app: FastAPI):
         outbox_worker = await app_container.get(OutboxPaymentsWorker)
         inbox_worker = await app_container.get(InboxWorker)
         notifications_worker = await app_container.get(OutboxNotificationsWorker)
+        outbox_shipping_worker = await app_container.get(OutboxShippingWorker)
+
 
         outbox_task = asyncio.create_task(outbox_worker.run())
         inbox_task = asyncio.create_task(inbox_worker.run())
         notifications_task = asyncio.create_task(notifications_worker.run())
+        shipping_task = asyncio.create_task(outbox_shipping_worker.run())
 
         yield
 
         outbox_task.cancel()
         inbox_task.cancel()
         notifications_task.cancel()
+        shipping_task.cancel()
         try:
             await outbox_task
         except asyncio.CancelledError:
@@ -40,6 +45,10 @@ async def lifespan(app: FastAPI):
             pass
         try:
             await notifications_task
+        except asyncio.CancelledError:
+            pass
+        try:
+            await shipping_task
         except asyncio.CancelledError:
             pass
 

@@ -12,9 +12,17 @@ class NotificationRequest(TypedDict):
     idempotency_key: str
 
 
-class BrokerMessage(TypedDict):
+class BrokerMessageResponse(TypedDict):
     event_type: str
     order_id: str
     item_id: str
     quantity: int
     shipment_id: str
+
+
+class BrokerMessageRequest(TypedDict):
+    event_type: str
+    order_id: str
+    item_id: str
+    quantity: str
+    idempotency_key: str

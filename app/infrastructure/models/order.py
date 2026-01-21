@@ -55,7 +55,8 @@ class OrderStatusModel(BaseModel):
         ForeignKey(column="orders.id", ondelete="CASCADE")
     )
     status: Mapped[OrderStatusEnum] = mapped_column(
-        Enum(OrderStatusEnum), default=OrderStatusEnum.NEW
+        Enum(OrderStatusEnum, name="orderstatusenum", values_callable=lambda obj: [e.value for e in obj]), 
+        default=OrderStatusEnum.NEW
     )
 
     # === RELATIONSHIPS ===

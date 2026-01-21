@@ -13,7 +13,6 @@ class InboxWorker:
 
     async def run(self):
         while True:
-            print("Inbox worker is running")
             session = self.database.create_session()
             try:
                 uow = UnitOfWork(session=session)

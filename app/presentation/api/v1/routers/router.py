@@ -196,7 +196,7 @@ async def create_order(
     - Returns HTTP 200 OK with empty data payload on successful processing
     - The actual processing happens asynchronously via inbox events
     """,
-    response_model=ApiResponseSchema[dict],
+    # response_model=ApiResponseSchema[dict],
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {
@@ -281,5 +281,5 @@ async def create_order(
 async def payment_callback(
     payment: PaymentRequestSchema, use_case: FromDishka["HandlePaymentResponseUseCase"]
 ):
-    data = await use_case(payment=payment.to_dto())
-    return ApiResponseSchema(data=data, meta={}, errors=[])
+    await use_case(payment=payment.to_dto())
+    return ApiResponseSchema(data={}, meta={}, errors=[])

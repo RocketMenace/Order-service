@@ -1,6 +1,5 @@
 from ..interfaces.uow import UnitOfWorkProtocol
 from ..interfaces.notifications import NotificationsServiceProtocol
-from ..enums.events import OutboxEventStatusEnum, EventTypeEnum
 from ..interfaces.contracts import NotificationRequest
 
 
@@ -15,10 +14,7 @@ class SendNotificationUseCase:
 
     async def __call__(self) -> None:
         async with self.uow:
-            notifications = await self.uow.outbox.get_events(
-                event_type=EventTypeEnum.ORDER_CREATED,
-                status=OutboxEventStatusEnum.PENDING,
-            )
+            notifications = await self.uow.outbox.get_unsent_notifications()
             if not notifications:
                 return None
             for notification in notifications:

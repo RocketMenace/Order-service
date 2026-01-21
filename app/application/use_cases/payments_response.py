@@ -5,11 +5,12 @@ from ..dto.inbox import InboxDTO
 from ..interfaces.uow import UnitOfWorkProtocol
 from ..dto.payment import PaymentDTO
 from ..interfaces.contracts import NotificationRequest
+from ..interfaces.contracts import BrokerMessageRequest
 from ..enums.events import (
     PaymentStatusEnum,
     InboxEventStatusEnum,
     EventTypeEnum,
-    OutboxEventStatusEnum
+    OutboxEventStatusEnum,
 )
 
 
@@ -32,12 +33,24 @@ class HandlePaymentResponseUseCase:
                     event_type=EventTypeEnum.ORDER_PAID,
                     status=OutboxEventStatusEnum.PENDING,
                     payload=NotificationRequest(
-                        message="Order is paid",
-                        idempotency_key=str(uuid.uuid4())
-                    )
+                        message="Order is paid", idempotency_key=str(uuid.uuid4())
+                    ),
+                )
+                order = await self.uow.orders.get_by_id(entity_id=payment.order_id)
+                broker_outbox_dto = OutboxDTO(
+                    event_type=EventTypeEnum.SHIPPING_REQUESTED,
+                    payload=BrokerMessageRequest(
+                        event_type=EventTypeEnum.ORDER_PAID,
+                        order_id=str(order.id),
+                        item_id=order.item_id,
+                        quantity=str(order.quantity),
+                        idempotency_key=str(uuid.uuid4()),
+                    ),
+                    status=OutboxEventStatusEnum.PENDING,
                 )
                 await self.uow.inbox.create(entity=inbox_dto)
                 await self.uow.outbox.create(entity=outbox_dto)
+                await self.uow.outbox.create(entity=broker_outbox_dto)
                 await self.uow.commit()
             if payment.status == PaymentStatusEnum.FAILED:
                 inbox_dto = InboxDTO(
@@ -50,9 +63,8 @@ class HandlePaymentResponseUseCase:
                     event_type=EventTypeEnum.ORDER_CANCELLED,
                     status=OutboxEventStatusEnum.PENDING,
                     payload=NotificationRequest(
-                        message="Order is cancelled",
-                        idempotency_key=str(uuid.uuid4())
-                    )
+                        message="Order is cancelled", idempotency_key=str(uuid.uuid4())
+                    ),
                 )
                 await self.uow.inbox.create(entity=inbox_dto)
                 await self.uow.outbox.create(entity=outbox_dto)

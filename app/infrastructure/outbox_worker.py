@@ -1,10 +1,12 @@
 import asyncio
 from app.application.use_cases.create_payment import CreatePaymentUseCase
 from app.application.use_cases.send_notification import SendNotificationUseCase
+from app.application.use_cases.register_shipping import RegisterShippingUseCase
 from app.infrastructure.config.database import Database
 from app.infrastructure.uow import UnitOfWork
 from app.infrastructure.adapters.payments import PaymentsService
 from app.infrastructure.adapters.notifications import NotificationsService
+from app.infrastructure.broker.producer import KafkaProducer
 
 
 class OutboxPaymentsWorker:
@@ -50,6 +52,27 @@ class OutboxNotificationsWorker:
                 use_case = SendNotificationUseCase(
                     uow=uow, notification_service=self.notifications_service
                 )
+                await use_case()
+            except Exception:
+                if not session.close:
+                    await session.rollback()
+                    await session.close()
+                raise
+            await asyncio.sleep(5)
+
+
+class OutboxShippingWorker:
+    def __init__(self, database: Database, broker: KafkaProducer):
+        self.database = database
+        self.broker = broker
+
+    async def run(self):
+        while True:
+            print("SHIPPING WORKER")
+            session = self.database.create_session()
+            try:
+                uow = UnitOfWork(session=session)
+                use_case = RegisterShippingUseCase(uow=uow, broker=self.broker)
                 await use_case()
             except Exception:
                 if not session.close:

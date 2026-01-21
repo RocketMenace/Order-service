@@ -10,6 +10,8 @@ from .providers import (
     PaymentsServiceProvider,
     AppPaymentsServiceProvider,
     AppNotificationsServiceProvider,
+    KafkaConfigProvider,
+    KafkaProducerProvider,
     UnitOfWorkProvider,
     CreatePaymentUseCaseProvider,
     OutboxPaymentsWorkerProvider,
@@ -17,6 +19,7 @@ from .providers import (
     UpdateOrderStatusUseCaseProvider,
     InboxWorkerProvider,
     OutboxNotificationsWorkerProvider,
+    OutboxShippingWorkerProvider,
 )
 
 container = make_async_container(
@@ -29,6 +32,8 @@ container = make_async_container(
     PaymentsServiceProvider(),
     AppPaymentsServiceProvider(),
     AppNotificationsServiceProvider(),
+    KafkaConfigProvider(),
+    KafkaProducerProvider(),
     UnitOfWorkProvider(),
     CreateOrderUseCaseProvider(),
     CreatePaymentUseCaseProvider(),
@@ -37,4 +42,5 @@ container = make_async_container(
     UpdateOrderStatusUseCaseProvider(),
     InboxWorkerProvider(),
     OutboxNotificationsWorkerProvider(),
+    OutboxShippingWorkerProvider(),
 )

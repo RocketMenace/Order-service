@@ -13,10 +13,12 @@ class InboxModel(BaseModel):
         CheckConstraint("status IN ('pending', 'sent')", name="valid_outbox_status"),
     )
     event_type: Mapped[EventTypeEnum] = mapped_column(
-        Enum(EventTypeEnum), default=EventTypeEnum.ORDER_CREATED
+        Enum(EventTypeEnum, name="eventtypeenum", values_callable=lambda obj: [e.value for e in obj]), 
+        default=EventTypeEnum.ORDER_CREATED
     )
     payload: Mapped[JSONB] = mapped_column(JSON().with_variant(JSONB(), "postgresql"))
     status: Mapped[InboxEventStatusEnum] = mapped_column(
-        Enum(InboxEventStatusEnum), default=InboxEventStatusEnum.PENDING
+        Enum(InboxEventStatusEnum, name="inboxeventstatusenum", values_callable=lambda obj: [e.value for e in obj]), 
+        default=InboxEventStatusEnum.PENDING
     )
     idempotency_key: Mapped[UUID] = mapped_column(SQLUUID, unique=True)

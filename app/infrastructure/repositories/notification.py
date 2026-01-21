@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .base import BaseRepository
 from ..models.notification import NotificationModel
-from app.application.dto.notification import NotificationDTO, NotificationDTOResponse
+from app.application.dto.notification import NotificationDTOResponse
 from sqlalchemy import select, update
 from uuid import UUID
 

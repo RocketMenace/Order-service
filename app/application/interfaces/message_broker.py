@@ -1,10 +1,13 @@
 from typing import Protocol, Self
-from .contracts import BrokerMessage
+from .contracts import BrokerMessageRequest
 
 
 class MessageProducerProtocol(Protocol):
     async def publish_message(
-        self, message: BrokerMessage, key: str | None = None, topic: str | None = None
+        self,
+        message: BrokerMessageRequest,
+        key: str | None = None,
+        topic: str | None = None,
     ) -> None: ...
     async def __aenter__(self) -> Self: ...
     async def __aexit__(self, exc_type, exc_val, exc_tb): ...

@@ -3,7 +3,7 @@ from typing import Self
 from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaError
 
-from app.application.interfaces.contracts import BrokerMessage
+from app.application.interfaces.contracts import BrokerMessageRequest
 from ..config.kafka_config import KafkaConfig
 
 
@@ -34,7 +34,10 @@ class KafkaProducer:
         self._producer = None
 
     async def publish_message(
-        self, message: BrokerMessage, key: str | None = None, topic: str | None = None
+        self,
+        message: BrokerMessageRequest,
+        key: str | None = None,
+        topic: str | None = None,
     ) -> None:
         if not self._started or self._producer is None:
             raise RuntimeError("Producer is not started. Call start() first.")

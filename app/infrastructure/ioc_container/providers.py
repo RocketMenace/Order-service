@@ -10,12 +10,16 @@ from ..adapters.catalog import CatalogService
 from ..adapters.payments import PaymentsService
 from ..adapters.notifications import NotificationsService
 from ..config.database import Database
+from ..config.kafka_config import KafkaConfig
+from ..broker.producer import KafkaProducer
 from ..uow import UnitOfWork
 from app.application.use_cases.create_order import CreateOrderUseCase
 from app.application.use_cases.create_payment import CreatePaymentUseCase
 from app.application.use_cases.payments_response import HandlePaymentResponseUseCase
 from app.application.use_cases.update_status import UpdateOrderStatusUseCase
-from ..outbox_worker import OutboxPaymentsWorker, OutboxNotificationsWorker
+from app.application.use_cases.register_shipping import RegisterShippingUseCase
+from app.application.interfaces.message_broker import MessageProducerProtocol
+from ..outbox_worker import OutboxPaymentsWorker, OutboxNotificationsWorker, OutboxShippingWorker
 from ..inbox_worker import InboxWorker
 
 
@@ -104,6 +108,22 @@ class AppNotificationsServiceProvider(Provider):
         return NotificationsService(client=client, settings=settings)
 
 
+class KafkaConfigProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    async def provide_kafka_config(self) -> KafkaConfig:
+        return KafkaConfig()
+
+
+class KafkaProducerProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    async def provide_kafka_producer(self, config: KafkaConfig) -> KafkaProducer:
+        return KafkaProducer(config=config)
+
+
 class UnitOfWorkProvider(Provider):
     scope = Scope.REQUEST
 
@@ -156,6 +176,16 @@ class UpdateOrderStatusUseCaseProvider(Provider):
     ) -> UpdateOrderStatusUseCase:
         return UpdateOrderStatusUseCase(uow=uow)
 
+class RegisterShippingUseCaseProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    async def provide_register_shipping_use_case(
+        self, broker: KafkaProducer
+    ) -> RegisterShippingUseCase:
+        # Note: UoW is created per iteration in the worker, so we don't inject it here
+        # The worker creates the use case with a fresh UoW each time
+        pass  # This provider is not used since worker creates use case directly
 
 class OutboxPaymentsWorkerProvider(Provider):
     scope = Scope.APP
@@ -164,7 +194,6 @@ class OutboxPaymentsWorkerProvider(Provider):
     async def provide_outbox_payment_worker(
         self, database: Database, payments_service: PaymentsService
     ) -> OutboxPaymentsWorker:
-        """Creates a worker that creates its own session for each operation."""
         return OutboxPaymentsWorker(
             database=database, payments_service=payments_service
         )
@@ -175,7 +204,6 @@ class InboxWorkerProvider(Provider):
 
     @provide
     async def provide_inbox_worker(self, database: Database) -> InboxWorker:
-        """Creates a worker that creates its own session for each operation."""
         return InboxWorker(database=database)
 
 
@@ -186,7 +214,16 @@ class OutboxNotificationsWorkerProvider(Provider):
     async def provide_outbox_notifications_worker(
         self, database: Database, notifications_service: NotificationsService
     ) -> OutboxNotificationsWorker:
-        """Creates a worker that creates its own session for each operation."""
         return OutboxNotificationsWorker(
             database=database, notifications_service=notifications_service
         )
+
+
+class OutboxShippingWorkerProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    async def provide_outbox_shipping_worker(
+        self, database: Database, broker: KafkaProducer
+    ) -> OutboxShippingWorker:
+        return OutboxShippingWorker(database=database, broker=broker)

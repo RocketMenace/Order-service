@@ -23,6 +23,15 @@ class UpdateOrderStatusUseCase:
                     await self.uow.order_status.create(entity=order_status_dto)
                     await self.uow.inbox.mark_as_processed(event_id=event.id)
                     await self.uow.commit()
+
+                if event.event_type == EventTypeEnum.ORDER_SHIPPED:
+                    order_status_dto = OrderStatusDTO(
+                        order_id=event.payload.get("order_id"),
+                        status=OrderStatusEnum.SHIPPED,
+                    )
+                    await self.uow.order_status.create(entity=order_status_dto)
+                    await self.uow.inbox.mark_as_processed(event_id=event.id)
+                    await self.uow.commit()
                 if event.event_type == EventTypeEnum.ORDER_CANCELLED:
                     order_status_dto = OrderStatusDTO(
                         order_id=event.payload.get("order_id"),

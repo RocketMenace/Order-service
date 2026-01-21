@@ -21,6 +21,116 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    # Fix enum types if they exist with old uppercase values
+    # This handles the case where the database was created with old enum values
+    op.execute("""
+        DO $$ 
+        BEGIN
+            -- Check if old enum types exist and need to be fixed
+            IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'eventtypeenum') THEN
+                -- Check if enum has old uppercase values
+                IF EXISTS (
+                    SELECT 1 FROM pg_enum 
+                    WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'eventtypeenum')
+                    AND enumlabel = 'ORDER_CREATED'
+                ) THEN
+                    -- Create new enum types with correct values
+                    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'eventtypeenum_new') THEN
+                        CREATE TYPE eventtypeenum_new AS ENUM (
+                            'order.created', 
+                            'order.paid', 
+                            'order.cancelled', 
+                            'order.shipped',
+                            'payment.requested', 
+                            'shipping.requested'
+                        );
+                    END IF;
+                    
+                    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'outboxeventstatusenum_new') THEN
+                        CREATE TYPE outboxeventstatusenum_new AS ENUM ('pending', 'sent');
+                    END IF;
+                    
+                    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'inboxeventstatusenum_new') THEN
+                        CREATE TYPE inboxeventstatusenum_new AS ENUM ('pending', 'processed');
+                    END IF;
+                    
+                    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'orderstatusenum_new') THEN
+                        CREATE TYPE orderstatusenum_new AS ENUM ('new', 'paid', 'shipped', 'cancelled');
+                    END IF;
+                    
+                    -- Convert outbox.event_type if table exists
+                    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'outbox') THEN
+                        ALTER TABLE outbox 
+                        ALTER COLUMN event_type TYPE eventtypeenum_new 
+                        USING CASE event_type::text
+                            WHEN 'ORDER_CREATED' THEN 'order.created'::eventtypeenum_new
+                            WHEN 'ORDER_PAID' THEN 'order.paid'::eventtypeenum_new
+                            WHEN 'ORDER_CANCELLED' THEN 'order.cancelled'::eventtypeenum_new
+                            WHEN 'PAYMENT_REQUESTED' THEN 'payment.requested'::eventtypeenum_new
+                            WHEN 'SHIPPING_REQUESTED' THEN 'shipping.requested'::eventtypeenum_new
+                            ELSE 'order.created'::eventtypeenum_new
+                        END;
+                        
+                        ALTER TABLE outbox 
+                        ALTER COLUMN status TYPE outboxeventstatusenum_new 
+                        USING CASE status::text
+                            WHEN 'PENDING' THEN 'pending'::outboxeventstatusenum_new
+                            WHEN 'SENT' THEN 'sent'::outboxeventstatusenum_new
+                            ELSE 'pending'::outboxeventstatusenum_new
+                        END;
+                    END IF;
+                    
+                    -- Convert inbox.event_type if table exists
+                    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'inbox') THEN
+                        ALTER TABLE inbox 
+                        ALTER COLUMN event_type TYPE eventtypeenum_new 
+                        USING CASE event_type::text
+                            WHEN 'ORDER_CREATED' THEN 'order.created'::eventtypeenum_new
+                            WHEN 'ORDER_PAID' THEN 'order.paid'::eventtypeenum_new
+                            WHEN 'ORDER_CANCELLED' THEN 'order.cancelled'::eventtypeenum_new
+                            WHEN 'PAYMENT_REQUESTED' THEN 'payment.requested'::eventtypeenum_new
+                            WHEN 'SHIPPING_REQUESTED' THEN 'shipping.requested'::eventtypeenum_new
+                            ELSE 'order.created'::eventtypeenum_new
+                        END;
+                        
+                        ALTER TABLE inbox 
+                        ALTER COLUMN status TYPE inboxeventstatusenum_new 
+                        USING CASE status::text
+                            WHEN 'PENDING' THEN 'pending'::inboxeventstatusenum_new
+                            WHEN 'PROCESSED' THEN 'processed'::inboxeventstatusenum_new
+                            ELSE 'pending'::inboxeventstatusenum_new
+                        END;
+                    END IF;
+                    
+                    -- Convert order_status.status if table exists
+                    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'order_status') THEN
+                        ALTER TABLE order_status 
+                        ALTER COLUMN status TYPE orderstatusenum_new 
+                        USING CASE status::text
+                            WHEN 'NEW' THEN 'new'::orderstatusenum_new
+                            WHEN 'PAID' THEN 'paid'::orderstatusenum_new
+                            WHEN 'SHIPPED' THEN 'shipped'::orderstatusenum_new
+                            WHEN 'CANCELLED' THEN 'cancelled'::orderstatusenum_new
+                            ELSE 'new'::orderstatusenum_new
+                        END;
+                    END IF;
+                    
+                    -- Drop old enum types
+                    DROP TYPE IF EXISTS eventtypeenum CASCADE;
+                    DROP TYPE IF EXISTS outboxeventstatusenum CASCADE;
+                    DROP TYPE IF EXISTS inboxeventstatusenum CASCADE;
+                    DROP TYPE IF EXISTS orderstatusenum CASCADE;
+                    
+                    -- Rename new enum types to original names
+                    ALTER TYPE eventtypeenum_new RENAME TO eventtypeenum;
+                    ALTER TYPE outboxeventstatusenum_new RENAME TO outboxeventstatusenum;
+                    ALTER TYPE inboxeventstatusenum_new RENAME TO inboxeventstatusenum;
+                    ALTER TYPE orderstatusenum_new RENAME TO orderstatusenum;
+                END IF;
+            END IF;
+        END $$;
+    """)
+    
     # ### commands auto generated by Alembic - please adjust! ###
     op.create_table(
         "orders",
@@ -53,10 +163,12 @@ def upgrade() -> None:
         sa.Column(
             "event_type",
             sa.Enum(
-                "ORDER_CREATED",
-                "ORDER_PAID",
-                "ORDER_CANCELLED",
-                "PAYMENT_REQUESTED",
+                "order.created",
+                "order.paid",
+                "order.cancelled",
+                "order.shipped",
+                "payment.requested",
+                "shipping.requested",
                 name="eventtypeenum",
             ),
             nullable=False,
@@ -70,7 +182,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum("PENDING", "SENT", name="outboxeventstatusenum"),
+            sa.Enum("pending", "sent", name="outboxeventstatusenum"),
             nullable=False,
         ),
         sa.Column("id", sa.UUID(), nullable=False),
@@ -98,7 +210,7 @@ def upgrade() -> None:
         sa.Column("order_id", sa.UUID(), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("NEW", "PAID", "SHIPPED", "CANCELLED", name="orderstatusenum"),
+            sa.Enum("new", "paid", "shipped", "cancelled", name="orderstatusenum"),
             nullable=False,
         ),
         sa.Column("id", sa.UUID(), nullable=False),
@@ -127,10 +239,12 @@ def upgrade() -> None:
         sa.Column(
             "event_type",
             sa.Enum(
-                "ORDER_CREATED",
-                "ORDER_PAID",
-                "ORDER_CANCELLED",
-                "PAYMENT_REQUESTED",
+                "order.created",
+                "order.paid",
+                "order.cancelled",
+                "order.shipped",
+                "payment.requested",
+                "shipping.requested",
                 name="eventtypeenum",
             ),
             nullable=False,
@@ -144,7 +258,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum("PENDING", "PROCESSED", name="inboxeventstatusenum"),
+            sa.Enum("pending", "processed", name="inboxeventstatusenum"),
             nullable=False,
         ),
         sa.Column("idempotency_key", sa.UUID(), nullable=False),
@@ -211,4 +325,10 @@ def downgrade() -> None:
     op.drop_index("idx_user_id", table_name="orders")
     op.drop_index("idx_item_id", table_name="orders")
     op.drop_table("orders")
+    
+    # Drop enum types
+    op.execute("DROP TYPE IF EXISTS eventtypeenum CASCADE;")
+    op.execute("DROP TYPE IF EXISTS outboxeventstatusenum CASCADE;")
+    op.execute("DROP TYPE IF EXISTS inboxeventstatusenum CASCADE;")
+    op.execute("DROP TYPE IF EXISTS orderstatusenum CASCADE;")
     # ### end Alembic commands ###

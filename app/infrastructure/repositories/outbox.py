@@ -22,7 +22,7 @@ class OutboxRepository(BaseRepository):
         event_type: EventTypeEnum | None = None,
         status: OutboxEventStatusEnum | None = None,
         limit: int | None = 100,
-    ) -> list[OutboxDTOResponse]:
+    ) -> list[OutboxDTOResponse] | list[None]:
         query = select(self.model)
 
         conditions = []
@@ -39,6 +39,22 @@ class OutboxRepository(BaseRepository):
         if limit is not None:
             query = query.limit(limit)
 
+        results = (await self.session.execute(query)).scalars().all()
+        return [self._model_to_entity(result) for result in results]
+
+    async def get_unsent_notifications(self) -> list[OutboxDTOResponse] | list[None]:
+        query = select(self.model).where(
+            self.model.status == OutboxEventStatusEnum.PENDING,
+            self.model.event_type.in_(
+                [
+                    EventTypeEnum.ORDER_CREATED,
+                    EventTypeEnum.ORDER_PAID,
+                    EventTypeEnum.ORDER_CANCELLED,
+                    EventTypeEnum.ORDER_SHIPPED,
+                ]
+            ),
+        )
+        query = query.with_for_update(skip_locked=True)
         results = (await self.session.execute(query)).scalars().all()
         return [self._model_to_entity(result) for result in results]
 
