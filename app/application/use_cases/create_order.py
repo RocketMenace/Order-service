@@ -12,6 +12,7 @@ from ..interfaces.contracts import NotificationRequest, PaymentRequest
 
 
 # TODO Move price calculation logic into Domain model
+# Need to implement Inbox pattern for order creation
 class CreateOrderUseCase:
     def __init__(
         self,
