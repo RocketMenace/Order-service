@@ -47,6 +47,8 @@ COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser alembic.ini ./
 COPY --chown=appuser:appuser migrations/ ./migrations/
+COPY --chown=appuser:appuser entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \
