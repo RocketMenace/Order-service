@@ -1,212 +1,460 @@
 # Order Service
 
-A microservice for managing orders in an e-commerce system, built with FastAPI and following Domain-Driven Design (DDD) principles. This service handles order creation, payment processing, shipping coordination, and order status management using an event-driven architecture with Kafka.
+A microservice for managing orders in an e-commerce system, built with FastAPI and following Domain-Driven Design (DDD) principles. The service handles order creation, payment processing, shipping registration, and notifications through an event-driven architecture using Kafka and an outbox pattern.
 
-## 🏗️ Architecture
+## Overview
 
-This service implements a **Clean Architecture** pattern with the following layers:
+The Order Service is responsible for:
+- Creating and managing orders
+- Validating item availability through the Catalog Service
+- Processing payment requests and callbacks
+- Managing order status updates
+- Sending notifications
+- Registering shipping requests via Kafka
+- Processing shipping responses from Kafka
 
-- **Presentation Layer**: FastAPI routers, schemas, and error handlers
-- **Application Layer**: Use cases, DTOs, and business logic interfaces
-- **Domain Layer**: Core domain models, value objects, and exceptions
-- **Infrastructure Layer**: Database repositories, external service adapters, message brokers, and workers
+## Architecture
 
-### Event-Driven Architecture
+The service follows a **Clean Architecture** pattern with clear separation of concerns:
 
-The service uses an **Outbox/Inbox Pattern** for reliable event processing:
+- **Presentation Layer**: FastAPI routers and request/response schemas
+- **Application Layer**: Use cases and business logic (DTOs, interfaces)
+- **Core Layer**: Domain models, value objects, and exceptions
+- **Infrastructure Layer**: Database, HTTP clients, message brokers, adapters, and workers
 
-- **Outbox Pattern**: Ensures reliable message publishing to Kafka
-- **Inbox Pattern**: Ensures idempotent message processing from Kafka
-- **Background Workers**: Process pending events asynchronously
+### Key Patterns
 
-## ✨ Features
+- **Outbox Pattern**: Ensures reliable event publishing by storing events in the database before publishing
+- **Inbox Pattern**: Processes incoming events from Kafka to update order status
+- **Unit of Work**: Manages database transactions and ensures data consistency
+- **Dependency Injection**: Uses Dishka for IoC container management
+- **Event-Driven Architecture**: Uses Kafka for asynchronous communication
 
-- **Order Management**
-  - Create orders with idempotency support
-  - Stock validation via Catalog Service integration
-  - Order status tracking (NEW → PAID → SHIPPED → CANCELLED)
+## Features
 
-- **Payment Processing**
-  - Integration with external Payment Service
-  - Payment callback handling
-  - Automatic order status updates based on payment results
+- ✅ Order creation with idempotency support
+- ✅ Stock validation via Catalog Service integration
+- ✅ Payment processing integration
+- ✅ Order status management
+- ✅ Asynchronous event processing (Outbox pattern)
+- ✅ Kafka message consumption for shipping updates
+- ✅ Notification service integration
+- ✅ Database migrations with Alembic
+- ✅ Structured logging with structlog
+- ✅ Health check endpoints
+- ✅ Comprehensive error handling
 
-- **Shipping Coordination**
-  - Kafka-based shipping request publishing
-  - Shipping response consumption and processing
-  - Order status updates when orders are shipped
-
-- **Event-Driven Communication**
-  - Kafka producer for publishing events
-  - Kafka consumer for receiving events
-  - Reliable message delivery with retry mechanisms
-
-- **Notification System**
-  - Order creation notifications
-  - Payment status notifications
-  - Shipping status notifications
-
-- **Idempotency**
-  - All operations support idempotency keys
-  - Prevents duplicate processing of events
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: FastAPI 0.127+
-- **Database**: PostgreSQL 15+ with SQLAlchemy 2.0+
-- **Message Broker**: Apache Kafka (via aiokafka)
-- **Async Runtime**: uvloop, httptools
+- **Python**: 3.13+
+- **Database**: PostgreSQL (asyncpg, SQLAlchemy 2.0)
+- **Message Broker**: Apache Kafka (aiokafka)
+- **HTTP Client**: httpx
 - **Dependency Injection**: Dishka
 - **Migrations**: Alembic
-- **HTTP Client**: httpx
-- **Validation**: Pydantic
 - **Logging**: structlog
+- **Validation**: Pydantic
+- **ASGI Server**: Uvicorn with uvloop and httptools
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Order-service/
 ├── app/
 │   ├── application/          # Application layer (use cases, DTOs, interfaces)
 │   │   ├── dto/              # Data Transfer Objects
-│   │   ├── enums/            # Event and status enums
+│   │   ├── enums/            # Application enums
 │   │   ├── interfaces/       # Protocol definitions
 │   │   └── use_cases/        # Business logic use cases
-│   ├── core/                 # Domain layer
+│   ├── core/                 # Domain layer (models, exceptions, value objects)
+│   │   ├── enums/            # Domain enums
 │   │   ├── exceptions/       # Domain exceptions
 │   │   ├── models/           # Domain models
 │   │   └── value_objects/    # Value objects
 │   ├── infrastructure/       # Infrastructure layer
 │   │   ├── adapters/         # External service adapters
-│   │   ├── broker/           # Kafka producer/consumer
-│   │   ├── config/           # Configuration classes
+│   │   ├── broker/           # Kafka consumer/producer
+│   │   ├── config/           # Configuration and settings
+│   │   ├── ioc_container/    # Dependency injection setup
 │   │   ├── models/           # Database models
 │   │   ├── repositories/     # Data access layer
-│   │   ├── ioc_container/   # Dependency injection
-│   │   ├── inbox_worker.py   # Inbox event processor
-│   │   └── outbox_worker.py  # Outbox event processor
+│   │   └── workers/          # Background workers
 │   ├── presentation/         # Presentation layer
-│   │   └── api/             # REST API endpoints
-│   └── main.py              # Application entry point
-├── migrations/               # Database migrations
-├── docker-compose.yml        # Docker services configuration
-├── pyproject.toml           # Project dependencies
-└── README.md                # This file
+│   │   └── api/              # FastAPI routers and schemas
+│   └── main.py               # Application entry point
+├── migrations/               # Alembic database migrations
+├── docker-compose.yml        # Docker Compose configuration
+├── Dockerfile               # Docker image definition
+├── entrypoint.sh            # Worker startup script
+├── Makefile                 # Development commands
+└── pyproject.toml           # Project dependencies
+
 ```
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.13+
 - PostgreSQL 15+
 - Apache Kafka (or use Docker Compose)
-- Docker & Docker Compose (optional, for local development)
+- uv package manager (recommended) or pip
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
-The API will be available at:
-- **API**: http://localhost:8000/api
-- **Swagger UI**: http://localhost:8000/api/docs
-- **ReDoc**: http://localhost:8000/api/redoc
+### 1. Clone the repository
 
-## 🔄 Background Workers
+```bash
+git clone <repository-url>
+cd Order-service
+```
 
-The service runs several background workers for asynchronous event processing:
+### 2. Install dependencies
 
-### Outbox Workers
+Using `uv` (recommended):
+```bash
+uv sync
+```
 
-- **OutboxPaymentsWorker**: Processes pending payment requests
-- **OutboxNotificationsWorker**: Sends pending notifications
-- **OutboxShippingWorker**: Publishes shipping requests to Kafka
+Or using `pip`:
+```bash
+pip install -e .
+```
 
-### Inbox Worker
+### 3. Environment Configuration
 
-- **InboxWorker**: Processes incoming events and updates order status
+Create a `.env` file in the root directory:
 
-Workers run continuously and poll for pending events every 5 seconds.
+```env
+# Project
+PROJECT_NAME=Order Service
+VERSION=0.1.0
+DEBUG=true
 
-## 📦 Event Types
+# Database
+POSTGRES_DB=order_service
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/order_service
 
-The service handles the following event types:
+# Database Pool
+DB_POOL_SIZE=5
+DB_MAX_OVERFLOW=10
+DB_POOL_TIMEOUT=30
 
-### Outbox Events (Published)
-- `order.created` - Order creation notification
-- `order.paid` - Payment success notification
-- `order.cancelled` - Order cancellation notification
-- `order.shipped` - Shipping confirmation notification
-- `payment.requested` - Payment processing request
-- `shipping.requested` - Shipping coordination request
+# Redis (optional)
+REDIS_HOST=
+REDIS_PORT=6379
+REDIS_DB=1
 
-### Inbox Events (Consumed)
-- `order.paid` - Payment status update
-- `order.shipped` - Shipping status update
-- `order.cancelled` - Order cancellation
+# Application
+APP_PORT=8000
 
-## 🔐 Idempotency
+# Logging
+LOG_LEVEL=INFO
+LOG_FORMAT=json
 
-All operations support idempotency keys to prevent duplicate processing:
+# External Services
+CATALOG_SERVICE_API_URL=http://localhost:8001/api
+PAYMENTS_SERVICE_API_URL=http://localhost:8002/api
+PAYMENTS_CALLBACK_URL=http://localhost:8000/api/v1/orders/payment-callback
+NOTIFICATIONS_SERVICE_API_URL=http://localhost:8003/api
 
-- **Order Creation**: Uses `idempotency_key` from request
-- **Payment Callback**: Uses `idempotency_key` from payment
-- **Shipping Response**: Generates UUID from `shipment_id` or `order_id`
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS=localhost:29092
+KAFKA_TOPIC=shipping-events
 
-## 🌐 External Service Integration
+# Capashino (if needed)
+CAPASHINO_SERVICE_ACCESS_TOKEN=
+```
 
-### Catalog Service
-- **Endpoint**: `GET /items/{item_id}/stock`
-- **Purpose**: Validates item existence and stock availability
+### 4. Database Setup
 
-### Payments Service
-- **Endpoint**: `POST /payments`
-- **Callback**: `POST /api/v1/orders/payment-callback`
-- **Purpose**: Processes order payments
+Create the database:
+```bash
+createdb order_service
+```
 
-### Notifications Service
-- **Endpoint**: `POST /notifications`
-- **Purpose**: Sends order status notifications
+Run migrations:
+```bash
+alembic upgrade head
+```
 
-## 🐳 Docker Configuration
+### 5. Start Kafka (if not using Docker)
 
-### Kafka Configuration
+Or use Docker Compose to start Kafka and Zookeeper:
+```bash
+docker-compose up -d zookeeper kafka
+```
 
-The service supports both local and Docker deployments:
+## Running the Application
 
-- **Local Development**: `KAFKA_BOOTSTRAP=localhost:29092`
-- **Docker Deployment**: `KAFKA_BOOTSTRAP=kafka:9092`
+### Development Mode
 
-Kafka is configured with two listeners:
-- External (localhost): Port `29092`
-- Internal (Docker network): Port `9092`
+Run the FastAPI application:
+```bash
+make run
+```
 
-## 📝 Environment Variables
+Or directly:
+```bash
+uvicorn app.main:app --reload --loop uvloop --http httptools
+```
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `POSTGRES_DB` | PostgreSQL database name | `order_service` |
-| `POSTGRES_USER` | PostgreSQL username | `postgres` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` |
-| `POSTGRES_HOST` | PostgreSQL host | `postgres` |
-| `POSTGRES_PORT` | PostgreSQL port | `5432` |
-| `DATABASE_URL` | Full database connection URL | - |
-| `KAFKA_BOOTSTRAP` | Kafka bootstrap servers | - |
-| `KAFKA_TOPIC` | Kafka topic name | `student_system_order.events` |
-| `CATALOG_SERVICE_API_URL` | Catalog service base URL | - |
-| `PAYMENTS_SERVICE_API_URL` | Payments service base URL | - |
-| `NOTIFICATIONS_SERVICE_API_URL` | Notifications service base URL | - |
-| `APP_PORT` | Application port | `8000` |
-| `DEBUG` | Debug mode | `True` |
-| `LOG_LEVEL` | Logging level | `INFO` |
+### Production Mode
 
+The application will be available at:
+- API: `http://localhost:8000/api`
+- Swagger UI: `http://localhost:8000/api/docs`
+- ReDoc: `http://localhost:8000/api/redoc`
 
-## 🔗 Related Services
+### Running Workers
 
-- Catalog Service - Item and inventory management
-- Payments Service - Payment processing
-- Notifications Service - User notifications
+The service includes several background workers that process events asynchronously. To run all workers:
 
+```bash
+./entrypoint.sh
+```
 
-## 📚 Additional Resources
+Or run individual workers:
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
-- [Kafka Documentation](https://kafka.apache.org/documentation/)
-- [Alembic Documentation](https://alembic.sqlalchemy.org/)
+```bash
+# Kafka Consumer (processes shipping events)
+python -m app.infrastructure.workers.run_kafka_consumer
+
+# Inbox Worker (processes inbox events for order status updates)
+python -m app.infrastructure.workers.run_inbox_worker
+
+# Outbox Payments Worker (sends payment requests)
+python -m app.infrastructure.workers.run_outbox_payments_worker
+
+# Outbox Notifications Worker (sends notifications)
+python -m app.infrastructure.workers.run_outbox_notifications_worker
+
+# Outbox Shipping Worker (publishes shipping events to Kafka)
+python -m app.infrastructure.workers.run_outbox_shipping_worker
+```
+
+## Workers
+
+The service runs multiple background workers to handle asynchronous processing:
+
+### 1. Kafka Consumer (`run_kafka_consumer`)
+- Consumes shipping response events from Kafka
+- Updates order status based on shipping information
+- Runs continuously, processing messages as they arrive
+
+### 2. Inbox Worker (`run_inbox_worker`)
+- Processes inbox events from the database
+- Updates order status (e.g., ORDER_PAID, ORDER_CANCELLED)
+- Polls every 5 seconds for new inbox events
+
+### 3. Outbox Payments Worker (`run_outbox_payments_worker`)
+- Processes pending payment request events from the outbox
+- Sends payment requests to the Payments Service
+- Marks events as processed after successful delivery
+- Polls every 5 seconds
+
+### 4. Outbox Notifications Worker (`run_outbox_notifications_worker`)
+- Processes pending notification events from the outbox
+- Sends notifications to the Notifications Service
+- Marks events as processed after successful delivery
+- Polls every 5 seconds
+
+### 5. Outbox Shipping Worker (`run_outbox_shipping_worker`)
+- Processes pending shipping events from the outbox
+- Publishes shipping events to Kafka
+- Marks events as processed after successful publishing
+- Polls every 5 seconds
+
+All workers are started automatically by `entrypoint.sh` with 2-second delays between each startup.
+
+## API Documentation
+
+### Endpoints
+
+#### Create Order
+```http
+POST /api/v1/orders
+Content-Type: application/json
+
+{
+  "item_id": "uuid",
+  "quantity": 2,
+  "user_id": "user-123",
+  "idempotency_key": "uuid"
+}
+```
+
+**Response**: Order details with status "new"
+
+#### Payment Callback
+```http
+POST /api/v1/orders/payment-callback
+Content-Type: application/json
+
+{
+  "id": "payment-uuid",
+  "user_id": "user-uuid",
+  "order_id": "order-uuid",
+  "amount": "100.00",
+  "status": "succeeded",
+  "idempotency_key": "uuid",
+  "created_at": "2025-01-01T00:00:00Z"
+}
+```
+
+**Response**: Empty data payload (processing happens asynchronously)
+
+### Interactive Documentation
+
+- **Swagger UI**: `http://localhost:8000/api/docs`
+- **ReDoc**: `http://localhost:8000/api/redoc`
+- **OpenAPI JSON**: `http://localhost:8000/api/openapi.json`
+
+## Database Migrations
+
+### Create a new migration
+```bash
+alembic revision --autogenerate -m "description"
+```
+
+### Apply migrations
+```bash
+alembic upgrade head
+```
+
+### Rollback migration
+```bash
+alembic downgrade -1
+```
+
+## Docker
+
+### Build the image
+```bash
+make build
+# or
+docker-compose build
+```
+
+### Run with Docker Compose
+```bash
+make run_all
+# or
+docker-compose up -d
+```
+
+### Stop containers
+```bash
+make down
+# or
+docker-compose down
+```
+
+The Dockerfile uses a multi-stage build for optimized image size and runs as a non-root user for security.
+
+## Development
+
+### Code Formatting
+```bash
+make format
+```
+
+### Code Linting
+```bash
+make check
+```
+
+### Running Tests
+```bash
+make test
+```
+
+### Available Make Commands
+
+```bash
+make help              # Show all available commands
+make build             # Build Docker images
+make run               # Run FastAPI application locally
+make run_all           # Start all containers in detached mode
+make down              # Stop and remove containers
+make destroy           # Stop and remove containers, networks, volumes
+make stop              # Stop running containers
+make test              # Run tests
+make format            # Format code with ruff and isort
+make check             # Run ruff check with auto-fix
+make worker-payments   # Run OutboxPaymentsWorker
+make worker-notifications  # Run OutboxNotificationsWorker
+make worker-shipping   # Run OutboxShippingWorker
+```
+
+## Architecture Details
+
+### Order Flow
+
+1. **Order Creation**:
+   - Client sends order request with idempotency key
+   - Service validates item exists and stock is available
+   - Order is created with status "NEW"
+   - Payment request event is added to outbox
+   - Notification event is added to outbox
+
+2. **Payment Processing**:
+   - Outbox Payments Worker sends payment request to Payments Service
+   - Payments Service processes payment and calls back
+   - Payment callback creates inbox event (ORDER_PAID or ORDER_CANCELLED)
+   - Inbox Worker processes the event and updates order status
+
+3. **Shipping Registration**:
+   - When order is paid, shipping event is added to outbox
+   - Outbox Shipping Worker publishes event to Kafka
+   - Shipping service consumes event and processes shipping
+   - Shipping service publishes response back to Kafka
+   - Kafka Consumer processes shipping response and updates order
+
+4. **Notifications**:
+   - Outbox Notifications Worker sends notifications to Notifications Service
+   - Notifications are sent for order creation, payment success/failure, etc.
+
+### Outbox Pattern
+
+The outbox pattern ensures reliable event publishing:
+- Events are stored in the database within the same transaction as the business operation
+- Background workers poll the outbox and publish events
+- Events are marked as processed only after successful publishing
+- Failed events can be retried
+
+### Inbox Pattern
+
+The inbox pattern ensures idempotent event processing:
+- Incoming events are stored in the inbox table
+- Events are processed based on idempotency keys
+- Duplicate events are ignored
+- Order status is updated based on event type
+
+## Configuration
+
+All configuration is managed through environment variables (see `.env` example above). The service uses `pydantic-settings` for configuration management with automatic validation.
+
+## Logging
+
+The service uses `structlog` for structured logging. Logs are output in JSON format by default, making them easy to parse and search in log aggregation systems.
+
+## Error Handling
+
+The service implements comprehensive error handling:
+- Domain exceptions for business logic errors
+- Infrastructure exceptions for external service failures
+- HTTP exception handlers for proper API responses
+- Retry logic for transient failures
+
+## License
+
+[Add your license here]
+
+## Contributing
+
+[Add contribution guidelines here]
+
