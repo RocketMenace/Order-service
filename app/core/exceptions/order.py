@@ -1,5 +1,7 @@
-from .base import DomainError
 from uuid import UUID
+
+from app.core.exceptions.base import DomainError
+from app.core.exceptions.contracts import OrderResponseData
 
 
 class ItemNotFoundError(DomainError):
@@ -16,6 +18,6 @@ class NotEnoughStocksError(DomainError):
 
 
 class OrderAlreadyExistsError(DomainError):
-    def __init__(self):
-        message = "Order in process."
-        super().__init__(message)
+    def __init__(self, data: OrderResponseData):
+        self.data = data
+        super().__init__()

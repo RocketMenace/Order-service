@@ -1,7 +1,8 @@
-from ..config.settings import Settings
-from .httpx_client import BaseHTTPXClient
 from fastapi import status
-from .contracts import PaymentRequest
+
+from app.infrastructure.adapters.contracts import PaymentRequest
+from app.infrastructure.adapters.httpx_client import BaseHTTPXClient
+from app.infrastructure.config.settings import Settings
 
 
 class PaymentsService:
@@ -16,7 +17,6 @@ class PaymentsService:
         async with self.client as client:
             response = await client.post(
                 url=self.base_url,
-                # headers={"Authorization": f"Bearer {self.access_token}"},
                 headers={"X-API-Key": self.access_token},
                 json=payload,
             )

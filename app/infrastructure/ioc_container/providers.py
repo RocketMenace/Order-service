@@ -1,26 +1,23 @@
 from typing import AsyncGenerator
 
-from dishka import Scope, provide, Provider
+from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config.settings import Settings
-from ..config.http_client import HTTPClientSettings
-from ..adapters.httpx_client import BaseHTTPXClient
-from ..adapters.catalog import CatalogService
-from ..adapters.payments import PaymentsService
-from ..adapters.notifications import NotificationsService
-from ..config.database import Database
-from ..config.kafka_config import KafkaConfig
-from ..broker.producer import KafkaProducer
-from ..uow import UnitOfWork
-from app.application.use_cases.create_order import CreateOrderUseCase
-from app.application.use_cases.create_payment import CreatePaymentUseCase
-from app.application.use_cases.payments_response import HandlePaymentResponseUseCase
-from app.application.use_cases.update_status import UpdateOrderStatusUseCase
-from app.application.use_cases.register_shipping import RegisterShippingUseCase
-from app.application.interfaces.message_broker import MessageProducerProtocol
-from ..outbox_worker import OutboxPaymentsWorker, OutboxNotificationsWorker, OutboxShippingWorker
-from ..inbox_worker import InboxWorker
+from app.application.use_cases import (CreateOrderUseCase,
+                                       CreatePaymentUseCase,
+                                       HandlePaymentResponseUseCase,
+                                       RegisterShippingUseCase,
+                                       ShippingResponseUseCase,
+                                       UpdateOrderStatusUseCase)
+from app.infrastructure.adapters import (BaseHTTPXClient, CatalogService,
+                                         NotificationsService, PaymentsService)
+from app.infrastructure.broker import KafkaConsumer, KafkaProducer
+from app.infrastructure.config import (Database, HTTPClientSettings,
+                                       KafkaConfig, Settings)
+from app.infrastructure.uow import UnitOfWork
+from app.infrastructure.workers import (InboxWorker, OutboxNotificationsWorker,
+                                        OutboxPaymentsWorker,
+                                        OutboxShippingWorker)
 
 
 class ApplicationSettingsProvider(Provider):
@@ -176,16 +173,26 @@ class UpdateOrderStatusUseCaseProvider(Provider):
     ) -> UpdateOrderStatusUseCase:
         return UpdateOrderStatusUseCase(uow=uow)
 
+
 class RegisterShippingUseCaseProvider(Provider):
-    scope = Scope.APP
+    scope = Scope.REQUEST
 
     @provide
     async def provide_register_shipping_use_case(
-        self, broker: KafkaProducer
+        self, uow: UnitOfWork, broker: KafkaProducer
     ) -> RegisterShippingUseCase:
-        # Note: UoW is created per iteration in the worker, so we don't inject it here
-        # The worker creates the use case with a fresh UoW each time
-        pass  # This provider is not used since worker creates use case directly
+        return RegisterShippingUseCase(uow=uow, broker=broker)
+
+
+class ShippingResponseUseCaseProvider(Provider):
+    scope = Scope.REQUEST
+
+    @provide
+    async def provide_shipping_response_use_case(
+        self, uow: UnitOfWork
+    ) -> ShippingResponseUseCase:
+        return ShippingResponseUseCase(uow=uow)
+
 
 class OutboxPaymentsWorkerProvider(Provider):
     scope = Scope.APP
@@ -227,3 +234,13 @@ class OutboxShippingWorkerProvider(Provider):
         self, database: Database, broker: KafkaProducer
     ) -> OutboxShippingWorker:
         return OutboxShippingWorker(database=database, broker=broker)
+
+
+class KafkaConsumerProvider(Provider):
+    scope = Scope.REQUEST
+
+    @provide
+    async def provide_kafka_consumer(
+        self, config: KafkaConfig, use_case: ShippingResponseUseCase
+    ) -> KafkaConsumer:
+        return KafkaConsumer(config=config, use_case=use_case)

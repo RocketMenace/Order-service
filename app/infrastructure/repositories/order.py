@@ -1,10 +1,12 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .base import BaseRepository
-from ..models.order import OrderModel
-from uuid import UUID
 from app.application.dto.order import OrderDTOResponse
+
+from ..models.order import OrderModel
+from .base import BaseRepository
 
 
 class OrderRepository(BaseRepository):

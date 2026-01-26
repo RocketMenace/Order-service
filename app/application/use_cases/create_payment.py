@@ -1,7 +1,6 @@
-from ..interfaces.uow import UnitOfWorkProtocol
-from ..interfaces.payments import PaymentServiceProtocol
-from ..enums.events import OutboxEventStatusEnum, EventTypeEnum
-from ..interfaces.contracts import PaymentRequest
+from app.application.enums.events import EventTypeEnum, OutboxEventStatusEnum
+from app.application.interfaces import (PaymentRequest, PaymentServiceProtocol,
+                                        UnitOfWorkProtocol)
 
 
 class CreatePaymentUseCase:

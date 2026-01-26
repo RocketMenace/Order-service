@@ -1,5 +1,6 @@
+from typing import Any, Generic, Sequence, TypeVar
+
 from pydantic import BaseModel, Field
-from typing import Any, TypeVar, Generic, Sequence
 
 DataT = TypeVar("DataT")
 

@@ -1,4 +1,6 @@
-from ..value_objects.item import Item
+from decimal import Decimal
+
+from app.core.value_objects.item import Item
 
 
 class Order:
@@ -8,9 +10,14 @@ class Order:
         self.user_id = user_id
         self.allocations = set()
 
-    async def allocate(self, item: Item) -> None:
+    def allocate(self, item: Item) -> None:
         if self.can_allocate():
             self.allocations.add(item)
 
     def can_allocate(self) -> bool:
         return self.item.available_qty >= self.qty
+
+    def calculate_amount(self, price: Decimal) -> Decimal | None:
+        if self.can_allocate():
+            return self.qty * price
+        return None

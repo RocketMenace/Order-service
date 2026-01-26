@@ -1,9 +1,11 @@
 from datetime import datetime
-
-from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
-from .enums import OrderStatusEnum
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from app.application.dto.order import OrderDTO
+
+from .enums import OrderStatusEnum
 
 
 class OrderBaseSchema(BaseModel):

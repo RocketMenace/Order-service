@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class KafkaConfig(BaseSettings):
@@ -10,4 +10,6 @@ class KafkaConfig(BaseSettings):
     )
 
     bootstrap_server: str = Field(default="", alias="KAFKA_BOOTSTRAP")
-    default_topic: str = Field("student_system_order.events", alias="KAFKA_TOPIC")
+    default_topic: str = Field(
+        default="student_system_order.events", alias="KAFKA_TOPIC"
+    )

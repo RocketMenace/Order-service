@@ -1,6 +1,6 @@
-from ..interfaces.uow import UnitOfWorkProtocol
-from ..interfaces.notifications import NotificationsServiceProtocol
-from ..interfaces.contracts import NotificationRequest
+from app.application.interfaces import (NotificationRequest,
+                                        NotificationsServiceProtocol,
+                                        UnitOfWorkProtocol)
 
 
 class SendNotificationUseCase:

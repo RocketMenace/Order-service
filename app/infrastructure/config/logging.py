@@ -1,21 +1,19 @@
-import structlog
 import logging
 import sys
-from .settings import Settings
+
+import structlog
+
+from app.infrastructure.config.settings import Settings
 
 
-class Logger:
-    def __init__(self, settings: Settings):
-        self.settings = settings
+def setup_logger() -> None:
+    settings = Settings()
+    level = settings.log_level
 
-    def setup_logging(self) -> None:
-        level = self.settings.log_level
-
-        # Choose renderer based on environment or settings
-        if self.settings.log_format == "json":
-            renderer = structlog.processors.JSONRenderer()
-        else:
-            renderer = structlog.dev.ConsoleRenderer(colors=True)
+    if settings.log_format == "json":
+        renderer = structlog.processors.JSONRenderer()
+    else:
+        renderer = structlog.dev.ConsoleRenderer(colors=True)
 
         processors = [
             structlog.contextvars.merge_contextvars,
@@ -42,6 +40,10 @@ class Logger:
             level=level,
         )
 
-        # Reduce noise from third-party libraries
         logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
         logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+
+
+def get_logger(name: str | None) -> structlog.stdlib.BoundLogger:
+    setup_logger()
+    return structlog.get_logger(name)

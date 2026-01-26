@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.dto.order import OrderStatusDTO
+
 from ..models.order import OrderStatusModel
 from .base import BaseRepository
-from app.application.dto.order import OrderStatusDTO
 
 
 class OrderStatusRepository(BaseRepository):

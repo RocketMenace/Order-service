@@ -1,18 +1,12 @@
+from decimal import Decimal
+from uuid import UUID
+
+from sqlalchemy import UUID as SQLUUID
+from sqlalchemy import (CheckConstraint, Enum, ForeignKey, Index, Integer,
+                        Numeric, String)
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel, Mapped, mapped_column
-from decimal import Decimal
-from sqlalchemy import (
-    Numeric,
-    String,
-    Index,
-    Integer,
-    CheckConstraint,
-    UUID as SQLUUID,
-    ForeignKey,
-    Enum,
-)
-from uuid import UUID
 from .enums import OrderStatusEnum
 
 
@@ -55,8 +49,12 @@ class OrderStatusModel(BaseModel):
         ForeignKey(column="orders.id", ondelete="CASCADE")
     )
     status: Mapped[OrderStatusEnum] = mapped_column(
-        Enum(OrderStatusEnum, name="orderstatusenum", values_callable=lambda obj: [e.value for e in obj]), 
-        default=OrderStatusEnum.NEW
+        Enum(
+            OrderStatusEnum,
+            name="orderstatusenum",
+            values_callable=lambda obj: [e.value for e in obj],
+        ),
+        default=OrderStatusEnum.NEW,
     )
 
     # === RELATIONSHIPS ===

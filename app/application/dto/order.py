@@ -1,6 +1,7 @@
-from dataclasses import dataclass, asdict
-from uuid import UUID
+from dataclasses import asdict, dataclass
 from decimal import Decimal
+from uuid import UUID
+
 from ..enums.events import OrderStatusEnum
 
 

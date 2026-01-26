@@ -1,8 +1,8 @@
-from dataclasses import dataclass, asdict
-from uuid import UUID
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
-from datetime import datetime
+from uuid import UUID
 
 
 @dataclass

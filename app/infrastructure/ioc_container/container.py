@@ -1,26 +1,19 @@
 from dishka import make_async_container
-from .providers import (
-    ApplicationSettingsProvider,
-    HTTPClientSettingsProvider,
-    DatabaseProvider,
-    DatabaseSessionProvider,
-    HTTPClientProvider,
-    CatalogServiceProvider,
-    CreateOrderUseCaseProvider,
-    PaymentsServiceProvider,
-    AppPaymentsServiceProvider,
-    AppNotificationsServiceProvider,
-    KafkaConfigProvider,
-    KafkaProducerProvider,
-    UnitOfWorkProvider,
-    CreatePaymentUseCaseProvider,
-    OutboxPaymentsWorkerProvider,
-    HandlePaymentResponseUseCaseProvider,
-    UpdateOrderStatusUseCaseProvider,
-    InboxWorkerProvider,
-    OutboxNotificationsWorkerProvider,
-    OutboxShippingWorkerProvider,
-)
+
+from .providers import (ApplicationSettingsProvider,
+                        AppNotificationsServiceProvider,
+                        AppPaymentsServiceProvider, CatalogServiceProvider,
+                        CreateOrderUseCaseProvider,
+                        CreatePaymentUseCaseProvider, DatabaseProvider,
+                        DatabaseSessionProvider,
+                        HandlePaymentResponseUseCaseProvider,
+                        HTTPClientProvider, HTTPClientSettingsProvider,
+                        InboxWorkerProvider, KafkaConfigProvider,
+                        KafkaProducerProvider,
+                        OutboxNotificationsWorkerProvider,
+                        OutboxPaymentsWorkerProvider,
+                        OutboxShippingWorkerProvider, PaymentsServiceProvider,
+                        UnitOfWorkProvider, UpdateOrderStatusUseCaseProvider)
 
 container = make_async_container(
     ApplicationSettingsProvider(),

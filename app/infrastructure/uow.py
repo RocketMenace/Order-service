@@ -1,11 +1,11 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Self
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .repositories.inbox import InboxRepository
 from .repositories.order import OrderRepository
-from .repositories.outbox import OutboxRepository
 from .repositories.order_status import OrderStatusRepository
-from .repositories.notification import NotificationRepository
+from .repositories.outbox import OutboxRepository
 
 
 class UnitOfWork:
@@ -15,7 +15,6 @@ class UnitOfWork:
         self._outbox: OutboxRepository | None = None
         self._inbox: InboxRepository | None = None
         self._order_status: OrderStatusRepository | None = None
-        self._notifications: NotificationRepository | None = None
 
     @property
     def order_status(self) -> OrderStatusRepository:
@@ -40,12 +39,6 @@ class UnitOfWork:
         if self._inbox is None:
             self._inbox = InboxRepository(session=self.session)
         return self._inbox
-
-    @property
-    def notifications(self) -> NotificationRepository:
-        if self._notifications is None:
-            self._notifications = NotificationRepository(session=self.session)
-        return self._notifications
 
     async def __aenter__(self) -> Self:
         return self

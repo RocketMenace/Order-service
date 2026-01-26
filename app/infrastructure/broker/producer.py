@@ -1,10 +1,14 @@
 import json
 from typing import Self
+
 from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaError
 
 from app.application.interfaces.contracts import BrokerMessageRequest
-from ..config.kafka_config import KafkaConfig
+from app.infrastructure.config.kafka_config import KafkaConfig
+from app.infrastructure.config.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class KafkaProducer:
@@ -19,6 +23,8 @@ class KafkaProducer:
 
         self._producer = AIOKafkaProducer(
             bootstrap_servers=self.config.bootstrap_server,
+            enable_idempotence=True,
+            acks=1,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             key_serializer=lambda k: k.encode("utf-8") if k is not None else None,
         )
@@ -45,12 +51,14 @@ class KafkaProducer:
         target_topic = self.config.default_topic
 
         try:
+            logger.info("Push message: ", data=message)
             await self._producer.send_and_wait(
                 topic=target_topic,
                 value=message,
                 key=key,
             )
         except KafkaError as e:
+            logger.error("Failed to publish message to Kafka: ", error=str(e))
             raise RuntimeError(f"Failed to publish message to Kafka: {e}") from e
 
     async def __aenter__(self) -> Self:

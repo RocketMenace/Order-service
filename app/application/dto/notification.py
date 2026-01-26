@@ -1,6 +1,6 @@
-from dataclasses import dataclass, asdict
-
+from dataclasses import asdict, dataclass
 from uuid import UUID
+
 from ..interfaces.contracts import NotificationRequest
 
 

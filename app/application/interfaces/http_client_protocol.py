@@ -1,4 +1,4 @@
-from typing import Self, Any, Protocol
+from typing import Any, Protocol, Self
 
 
 class HTTPBaseClientProtocol(Protocol):

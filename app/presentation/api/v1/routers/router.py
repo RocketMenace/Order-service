@@ -1,11 +1,15 @@
+from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, status
-from ..schemas.order import OrderResponseSchema, OrderRequestSchema
-from ..schemas.payment import PaymentRequestSchema
-from ..schemas.response import ApiResponseSchema
-from dishka.integrations.fastapi import inject, FromDishka
-from app.application.use_cases.create_order import CreateOrderUseCase
-from app.application.use_cases.payments_response import HandlePaymentResponseUseCase
 
+from app.application.use_cases import (CreateOrderUseCase,
+                                       HandlePaymentResponseUseCase)
+from app.infrastructure.config.logging import get_logger
+from app.presentation.api.v1.schemas import (ApiResponseSchema,
+                                             OrderRequestSchema,
+                                             OrderResponseSchema,
+                                             PaymentRequestSchema)
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix="/orders",
@@ -66,6 +70,32 @@ router = APIRouter(
                             "method": "POST",
                         },
                         "errors": [],
+                    },
+                },
+            },
+        },
+        status.HTTP_200_OK: {
+            "description": "Order already exists - an order with the same idempotency key is already in process",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "data": {
+                            "id": "9a4f56ba-1979-4fd1-a16e-b0727c472173",
+                            "item_id": "de71f1c7-674d-4569-ad05-5f1367ccc4ce",
+                            "quantity": 2,
+                            "status": "new",
+                            "created_at": "2025-10-31T14:12:57.868385+00:00",
+                            "updated_at": "2025-10-31T14:12:57.868385+00:00",
+                        },
+                        "meta": {
+                            "path": "/api/v1/orders",
+                            "method": "POST",
+                        },
+                        "errors": [
+                            {
+                                "detail": "This order already in process",
+                            },
+                        ],
                     },
                 },
             },
@@ -159,6 +189,7 @@ async def create_order(
     order: OrderRequestSchema,
     use_case: FromDishka["CreateOrderUseCase"],
 ):
+    logger.info("Create order request received", data=order.model_dump())
     data = await use_case(order_dto=order.to_dto())
     return ApiResponseSchema(data=data, meta={}, errors=[])
 
@@ -196,7 +227,6 @@ async def create_order(
     - Returns HTTP 200 OK with empty data payload on successful processing
     - The actual processing happens asynchronously via inbox events
     """,
-    # response_model=ApiResponseSchema[dict],
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {
@@ -281,5 +311,6 @@ async def create_order(
 async def payment_callback(
     payment: PaymentRequestSchema, use_case: FromDishka["HandlePaymentResponseUseCase"]
 ):
+    logger.info("Payment callback request received", data=payment.model_dump())
     await use_case(payment=payment.to_dto())
     return ApiResponseSchema(data={}, meta={}, errors=[])

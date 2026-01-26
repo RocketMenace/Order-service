@@ -10,7 +10,6 @@ class EventTypeEnum(StrEnum):
     SHIPPING_REQUESTED = "shipping.requested"
 
 
-
 class OutboxEventStatusEnum(StrEnum):
     PENDING = "pending"
     SENT = "sent"

@@ -1,7 +1,8 @@
-from ..config.settings import Settings
-from .httpx_client import BaseHTTPXClient
-from .contracts import NotificationRequest
 from fastapi import status
+
+from app.infrastructure.adapters.contracts import NotificationRequest
+from app.infrastructure.adapters.httpx_client import BaseHTTPXClient
+from app.infrastructure.config.settings import Settings
 
 
 class NotificationsService:

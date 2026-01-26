@@ -1,8 +1,9 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.dialects.postgresql import UUID as SQLUUID
-from sqlalchemy import DateTime, func
-from uuid import UUID, uuid4
 from datetime import datetime
+from uuid import UUID, uuid4
+
+from sqlalchemy import DateTime, func
+from sqlalchemy.dialects.postgresql import UUID as SQLUUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class BaseModel(DeclarativeBase):

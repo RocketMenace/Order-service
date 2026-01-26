@@ -1,6 +1,6 @@
+from sqlalchemy import JSON, CheckConstraint, Enum, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Enum, JSON, Index, CheckConstraint
 
 from .base import BaseModel
 from .enums import EventTypeEnum, OutboxEventStatusEnum
@@ -14,11 +14,19 @@ class OutboxModel(BaseModel):
         CheckConstraint("status IN ('pending', 'sent')", name="valid_outbox_status"),
     )
     event_type: Mapped[EventTypeEnum] = mapped_column(
-        Enum(EventTypeEnum, name="eventtypeenum", values_callable=lambda obj: [e.value for e in obj]), 
-        default=EventTypeEnum.ORDER_CREATED
+        Enum(
+            EventTypeEnum,
+            name="eventtypeenum",
+            values_callable=lambda obj: [e.value for e in obj],
+        ),
+        default=EventTypeEnum.ORDER_CREATED,
     )
     payload: Mapped[JSONB] = mapped_column(JSON().with_variant(JSONB(), "postgresql"))
     status: Mapped[OutboxEventStatusEnum] = mapped_column(
-        Enum(OutboxEventStatusEnum, name="outboxeventstatusenum", values_callable=lambda obj: [e.value for e in obj]), 
-        default=OutboxEventStatusEnum.PENDING
+        Enum(
+            OutboxEventStatusEnum,
+            name="outboxeventstatusenum",
+            values_callable=lambda obj: [e.value for e in obj],
+        ),
+        default=OutboxEventStatusEnum.PENDING,
     )

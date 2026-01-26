@@ -1,8 +1,8 @@
-from sqlalchemy import JSON, BOOLEAN
+from sqlalchemy import BOOLEAN, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..models.base import BaseModel
-from sqlalchemy.dialects.postgresql import JSONB
 
 
 class NotificationModel(BaseModel):

@@ -1,18 +1,17 @@
 import uuid
 
-from ..interfaces.uow import UnitOfWorkProtocol
-from ..dto.order import OrderDTO, OrderStatusDTO, OrderDTOResponse
-from ..dto.outbox import OutboxDTO
-from ..interfaces.catalog import CatalogServiceProtocol
-from ..enums.events import EventTypeEnum, OutboxEventStatusEnum, OrderStatusEnum
+from app.application.dto import (OrderDTO, OrderDTOResponse, OrderStatusDTO,
+                                 OutboxDTO)
+from app.application.enums.events import (EventTypeEnum, OrderStatusEnum,
+                                          OutboxEventStatusEnum)
+from app.application.interfaces import (CatalogServiceProtocol,
+                                        NotificationRequest, PaymentRequest,
+                                        UnitOfWorkProtocol)
+from app.core.exceptions import (ItemNotFoundError, NotEnoughStocksError,
+                                 OrderAlreadyExistsError, OrderResponseData)
 from app.core.models.order import Order
-from app.core.exceptions.order import ItemNotFoundError, NotEnoughStocksError
-from decimal import Decimal
-from ..interfaces.contracts import NotificationRequest, PaymentRequest
 
 
-# TODO Move price calculation logic into Domain model
-# Need to implement Inbox pattern for order creation
 class CreateOrderUseCase:
     def __init__(
         self,
@@ -28,7 +27,7 @@ class CreateOrderUseCase:
                 idempotency_key=order_dto.idempotency_key
             )
             if order:
-                return order  # Response status code 200 Raise order already exists with data=order
+                raise OrderAlreadyExistsError(data=OrderResponseData(**order.to_dict()))
             item = await self.catalog_service.get_item_stock(item_id=order_dto.item_id)
             if not item:
                 raise ItemNotFoundError(item_id=order_dto.item_id)
@@ -37,9 +36,7 @@ class CreateOrderUseCase:
             if not order.can_allocate():
                 raise NotEnoughStocksError()
 
-            order_dto.amount = (
-                Decimal(order.qty) * order.item.price
-            )  # Need move this logic to Domain model
+            order_dto.amount = order.calculate_amount(price=item.price)
 
             created_order = await self.uow.orders.create(entity=order_dto)
 

@@ -1,6 +1,7 @@
-from ..interfaces.uow import UnitOfWorkProtocol
-from ..enums.events import InboxEventStatusEnum, EventTypeEnum, OrderStatusEnum
-from ..dto.order import OrderStatusDTO
+from app.application.dto import OrderStatusDTO
+from app.application.enums.events import (EventTypeEnum, InboxEventStatusEnum,
+                                          OrderStatusEnum)
+from app.application.interfaces import UnitOfWorkProtocol
 
 
 class UpdateOrderStatusUseCase:

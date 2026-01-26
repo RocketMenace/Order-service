@@ -1,13 +1,15 @@
-from dataclasses import dataclass, asdict
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from ..enums.events import EventTypeEnum, OutboxEventStatusEnum
-from typing import Any
-from ..interfaces.contracts import (
-    NotificationRequest,
-    PaymentRequest,
-    BrokerMessageRequest,
-)
+from app.application.enums.events import EventTypeEnum, OutboxEventStatusEnum
+
+if TYPE_CHECKING:
+    from app.application.interfaces.contracts import (BrokerMessageRequest,
+                                                      NotificationRequest,
+                                                      PaymentRequest)
 
 
 @dataclass

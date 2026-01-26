@@ -1,13 +1,12 @@
-from fastapi import FastAPI, status, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
-from app.core.exceptions.order import (
-    ItemNotFoundError,
-    NotEnoughStocksError,
-    OrderAlreadyExistsError,
-)
+from fastapi.responses import JSONResponse
+
+from app.core.exceptions.order import (ItemNotFoundError, NotEnoughStocksError,
+                                       OrderAlreadyExistsError)
 from app.infrastructure.exceptions.cache_exc import CacheClientException
-from app.infrastructure.exceptions.payment_exc import PaymentServiceUnavailableException
+from app.infrastructure.exceptions.payment_exc import \
+    PaymentServiceUnavailableException
 from app.presentation.api.v1.schemas.response import ApiResponseSchema
 
 
@@ -91,14 +90,13 @@ def register_error_handlers(app: FastAPI) -> None:
         request: Request, exc: OrderAlreadyExistsError
     ) -> JSONResponse:
         response_data = ApiResponseSchema(
-            data={},
+            data=exc.data,
             meta={
                 "path": str(request.url.path),
                 "method": request.method,
             },
             errors=[
                 {
-                    "message": str(exc),
                     "detail": "This order already in process",
                 }
             ],

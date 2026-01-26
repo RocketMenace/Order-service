@@ -1,16 +1,13 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from sqlalchemy.dialects.postgresql import insert
-
-from .base import BaseRepository
-from ..models.inbox import InboxModel
-from app.application.dto.inbox import InboxDTOResponse, InboxDTO
 from uuid import UUID
 
-from ...application.enums.events import (
-    EventTypeEnum,
-    InboxEventStatusEnum,
-)
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.application.dto import InboxDTO, InboxDTOResponse
+from app.application.enums.events import EventTypeEnum, InboxEventStatusEnum
+from app.infrastructure.models import InboxModel
+from app.infrastructure.repositories.base import BaseRepository
 
 
 class InboxRepository(BaseRepository):

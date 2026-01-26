@@ -2,7 +2,8 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
 
 
 class Database:

@@ -1,11 +1,8 @@
 from typing import Protocol, Self
-from .repository import (
-    OrderRepositoryProtocol,
-    OutboxRepositoryProtocol,
-    OrderStatusRepositoryProtocol,
-    InboxRepositoryProtocol,
-    NotificationRepositoryProtocol,
-)
+
+from app.application.interfaces.repository import (
+    InboxRepositoryProtocol, OrderRepositoryProtocol,
+    OrderStatusRepositoryProtocol, OutboxRepositoryProtocol)
 
 
 class UnitOfWorkProtocol(Protocol):
@@ -13,7 +10,6 @@ class UnitOfWorkProtocol(Protocol):
     outbox: OutboxRepositoryProtocol
     order_status: OrderStatusRepositoryProtocol
     inbox: InboxRepositoryProtocol
-    notifications: NotificationRepositoryProtocol
 
     async def __aenter__(self) -> Self: ...
 

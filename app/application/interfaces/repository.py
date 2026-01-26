@@ -1,10 +1,11 @@
 from typing import Protocol
 from uuid import UUID
-from app.application.dto.order import OrderDTO, OrderStatusDTO, OrderDTOResponse
-from app.application.dto.outbox import OutboxDTO, OutboxDTOResponse
-from app.application.dto.inbox import InboxDTO, InboxDTOResponse
-from app.application.dto.notification import NotificationDTO, NotificationDTOResponse
-from ..enums.events import OutboxEventStatusEnum, EventTypeEnum, InboxEventStatusEnum
+
+from app.application.dto import (InboxDTO, InboxDTOResponse, OrderDTO,
+                                 OrderDTOResponse, OrderStatusDTO, OutboxDTO,
+                                 OutboxDTOResponse)
+from app.application.enums.events import (EventTypeEnum, InboxEventStatusEnum,
+                                          OutboxEventStatusEnum)
 
 
 class OrderRepositoryProtocol(Protocol):
@@ -43,9 +44,3 @@ class InboxRepositoryProtocol(Protocol):
 
 class OrderStatusRepositoryProtocol(Protocol):
     async def create(self, entity: OrderStatusDTO) -> OrderStatusDTO: ...
-
-
-class NotificationRepositoryProtocol(Protocol):
-    async def create(self, entity: NotificationDTO) -> None: ...
-    async def get_notifications(self) -> list[NotificationDTOResponse]: ...
-    async def mark_as_sent(self, notification_id: UUID) -> None: ...

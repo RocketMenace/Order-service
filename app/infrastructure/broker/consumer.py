@@ -1,29 +1,27 @@
-import asyncio
 import json
 from typing import Optional
+
 from aiokafka import AIOKafkaConsumer
-from aiokafka.errors import KafkaError
 from aiokafka.structs import ConsumerRecord
 
-from ..config.kafka_config import KafkaConfig
+from app.application.use_cases.shipping_response import ShippingResponseUseCase
+from app.infrastructure.config.kafka_config import KafkaConfig
+from app.infrastructure.config.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class KafkaConsumer:
-    def __init__(self, config: KafkaConfig, consumer_group_id: str = "order-service-group"):
+    def __init__(self, config: KafkaConfig, use_case: ShippingResponseUseCase):
         self.config = config
-        self.consumer_group_id = consumer_group_id
         self._consumer: AIOKafkaConsumer | None = None
         self._started = False
+        self.consumer_group_id = "order-service-group"
+        self.use_case = use_case
 
     async def start(self) -> None:
         if self._started:
             return
-
-        if not self.config.bootstrap_server:
-            raise ValueError(
-                "Kafka bootstrap server is not configured. "
-                "Please set KAFKA_BOOTSTRAP environment variable (e.g., 'kafka:9092' for Docker or 'localhost:29092' for local)."
-            )
 
         self._consumer = AIOKafkaConsumer(
             self.config.default_topic,
@@ -32,7 +30,6 @@ class KafkaConsumer:
             value_deserializer=lambda m: json.loads(m.decode("utf-8")) if m else None,
             key_deserializer=lambda k: k.decode("utf-8") if k else None,
             auto_offset_reset="earliest",
-            enable_auto_commit=True,
         )
         await self._consumer.start()
         self._started = True
@@ -51,7 +48,18 @@ class KafkaConsumer:
 
         try:
             async for message in self._consumer:
-                return message
+                try:
+                    logger.info(
+                        "Process message",
+                        partition=message.partition,
+                        data=message.value,
+                    )
+                    await self.use_case(message=message.value)
+                    await self._consumer.commit()
+                except Exception as e:
+                    logger.error(
+                        "Failed to process message", data=message.value, error=str(e)
+                    )
+                    raise
         finally:
             await self._consumer.stop()
-

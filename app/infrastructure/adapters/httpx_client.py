@@ -5,7 +5,10 @@ from typing import Any, Self
 import httpx
 from fastapi import status
 
-from ..config.http_client import HTTPClientSettings
+from app.infrastructure.config.http_client import HTTPClientSettings
+from app.infrastructure.config.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class BaseHTTPXClient:
@@ -14,7 +17,6 @@ class BaseHTTPXClient:
         status.HTTP_500_INTERNAL_SERVER_ERROR,
         status.HTTP_503_SERVICE_UNAVAILABLE,
         status.HTTP_504_GATEWAY_TIMEOUT,
-        status.HTTP_400_BAD_REQUEST,
     )
 
     RETRYABLE_EXCEPTIONS = (
@@ -64,35 +66,105 @@ class BaseHTTPXClient:
         json: dict[str, Any] | None = None,
     ) -> httpx.Response:
         last_exception = None
-        for attempt in range(self.config.max_retry + 1):
+        total_attempts = self.config.max_retry + 1
+
+        logger.info(
+            "HTTP request initiated",
+            method=method,
+            url=url,
+        )
+
+        for attempt in range(total_attempts):
             try:
                 response = await self._client.request(
                     method=method, url=url, params=params, headers=headers, json=json
                 )
+                logger.info(
+                    "Response data: ",
+                    status_code=response.status_code,
+                    content=response.content,
+                )
                 if response.status_code in self.RETRYABLE_STATUS_CODES:
                     if attempt < self.config.max_retry:
                         delay = self._calculate_jitter_delay(attempt)
+                        logger.warning(
+                            "HTTP request received retryable status code, retrying",
+                            method=method,
+                            url=url,
+                            status_code=response.status_code,
+                        )
                         await asyncio.sleep(delay)
                         continue
                 return response
 
             except self.RETRYABLE_EXCEPTIONS as e:
                 last_exception = e
+                exception_type = type(e).__name__
+
                 if attempt < self.config.max_retry:
                     delay = self._calculate_jitter_delay(attempt)
+                    logger.warning(
+                        "HTTP request failed with retryable exception, retrying",
+                        method=method,
+                        url=url,
+                        exception_type=exception_type,
+                        exception_message=str(e),
+                    )
                     await asyncio.sleep(delay)
                     continue
+                else:
+                    logger.error(
+                        "HTTP request failed with retryable exception, all retries exhausted",
+                        method=method,
+                        url=url,
+                        exception_type=exception_type,
+                    )
 
             except httpx.HTTPStatusError as e:
-                if e.response.status_code not in self.RETRYABLE_STATUS_CODES:
+                status_code = e.response.status_code if e.response else None
+
+                if status_code not in self.RETRYABLE_STATUS_CODES:
+                    logger.error(
+                        "HTTP request failed with non-retryable status code",
+                        method=method,
+                        url=url,
+                        status_code=status_code,
+                    )
                     raise
+
                 last_exception = e
                 if attempt < self.config.max_retry:
                     delay = self._calculate_jitter_delay(attempt)
+                    logger.warning(
+                        "HTTP request failed with retryable HTTP status error, retrying",
+                        method=method,
+                        url=url,
+                        status_code=status_code,
+                    )
                     await asyncio.sleep(delay)
                     continue
+                else:
+                    logger.error(
+                        "HTTP request failed with retryable HTTP status error, all retries exhausted",
+                        method=method,
+                        url=url,
+                        status_code=status_code,
+                    )
+
         if last_exception:
+            logger.error(
+                "HTTP request failed after all retry attempts",
+                method=method,
+                url=url,
+            )
             raise last_exception
+
+        logger.error(
+            "HTTP request failed after all retry attempts with unknown error",
+            method=method,
+            url=url,
+            total_attempts=total_attempts,
+        )
         raise httpx.RequestError("Request failed after all retry attempts")
 
     async def post(

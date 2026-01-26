@@ -1,11 +1,16 @@
-from uuid import UUID
-from app.core.value_objects.item import Item
-from ..config.settings import Settings
-from typing import Any
-from adaptix import Retort, loader
 from decimal import Decimal
-from .httpx_client import BaseHTTPXClient
+from typing import Any
+from uuid import UUID
+
+from adaptix import Retort, loader
 from fastapi import status
+
+from app.core.value_objects.item import Item
+from app.infrastructure.adapters.httpx_client import BaseHTTPXClient
+from app.infrastructure.config.logging import get_logger
+from app.infrastructure.config.settings import Settings
+
+logger = get_logger(__name__)
 
 
 class CatalogService:
@@ -18,7 +23,6 @@ class CatalogService:
         async with self.client as client:
             response = await client.get(
                 url=f"{self.base_url}/{item_id}",
-                # headers={"Authorization": f"Bearer {self.access_token}"},
                 headers={"X-API-Key": self.access_token},
             )
             if response.status_code != status.HTTP_200_OK:

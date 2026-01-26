@@ -1,17 +1,12 @@
 import uuid
 
-from ..dto.outbox import OutboxDTO
-from ..dto.inbox import InboxDTO
-from ..interfaces.uow import UnitOfWorkProtocol
-from ..dto.payment import PaymentDTO
-from ..interfaces.contracts import NotificationRequest
-from ..interfaces.contracts import BrokerMessageRequest
-from ..enums.events import (
-    PaymentStatusEnum,
-    InboxEventStatusEnum,
-    EventTypeEnum,
-    OutboxEventStatusEnum,
-)
+from app.application.dto import InboxDTO, OutboxDTO, PaymentDTO
+from app.application.enums.events import (EventTypeEnum, InboxEventStatusEnum,
+                                          OutboxEventStatusEnum,
+                                          PaymentStatusEnum)
+from app.application.interfaces import (BrokerMessageRequest,
+                                        NotificationRequest,
+                                        UnitOfWorkProtocol)
 
 
 class HandlePaymentResponseUseCase:

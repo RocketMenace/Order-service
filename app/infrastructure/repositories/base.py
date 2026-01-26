@@ -1,7 +1,7 @@
 from typing import Generic
 from uuid import UUID
 
-from sqlalchemy import select, insert
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..repositories.type_vars import TEntity, TModel

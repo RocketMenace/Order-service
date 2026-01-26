@@ -1,12 +1,13 @@
 from uuid import UUID
 
+from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, insert
+
+from app.application.dto import OutboxDTO, OutboxDTOResponse
+from app.infrastructure.models import (EventTypeEnum, OutboxEventStatusEnum,
+                                       OutboxModel)
 
 from .base import BaseRepository
-from ..models.outbox import OutboxModel
-from ..models.enums import EventTypeEnum, OutboxEventStatusEnum
-from app.application.dto.outbox import OutboxDTO, OutboxDTOResponse
 
 
 class OutboxRepository(BaseRepository):
