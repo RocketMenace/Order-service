@@ -42,7 +42,6 @@ services:
       - order_service_network
     restart: unless-stopped
     command: ["/app/entrypoint.sh"]
-    # Workers don't need HTTP healthcheck, restart policy handles failures
 
 networks:
   order_service_network:
