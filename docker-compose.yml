@@ -1,93 +1,71 @@
 services:
 
-    # PostgreSQL database
-  postgres:
-      container_name: postgres
-      image: postgres:15-alpine
-      environment:
-        POSTGRES_DB: ${POSTGRES_DB}
-        POSTGRES_USER: ${POSTGRES_USER}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      ports:
-        - "${POSTGRES_PORT:-5432}:5432"
-      volumes:
-        - postgres_data:/var/lib/postgresql/data
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      env_file:
-        - ".env"
-      networks:
-        - order_service_network
-
     # FastAPI application
   app:
     container_name: app
     build: .
     ports:
       - "${APP_PORT:-8000}:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file:
-      - .env
-    command: ["/entrypoint.sh"]
-    networks:
-      - order_service_network
-
-  # Zookeeper (required for Kafka)
-  zookeeper:
-    container_name: zookeeper
-    image: confluentinc/cp-zookeeper:7.5.0
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+      PROJECT_NAME: "${PROJECT_NAME}"
+      VERSION: "${VERSION}"
+      APP_PORT: "${APP_PORT}"
+      DEBUG: "${DEBUG}"
+      LOG_LEVEL: "${LOG_LEVEL}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_PORT: "${POSTGRES_PORT}"
+      POSTGRES_HOST: "${POSTGRES_HOST}"
+      DATABASE_URL: "${DATABASE_URL}"
+      DB_POOL_SIZE: "${DB_POOL_SIZE}"
+      DB_MAX_OVERFLOW: "${DB_MAX_OVERFLOW}"
+      DB_POOL_TIMEOUT: "${DB_POOL_TIMEOUT}"
+      CATALOG_SERVICE_URL: "${CATALOG_SERVICE_URL}"
+      PAYMENTS_SERVICE_API_URL: "${PAYMENTS_SERVICE_API_URL}"
+      PAYMENTS_CALLBACK_URL: "${PAYMENTS_CALLBACK_URL}"
+      NOTIFICATIONS_SERVICE_API_URL: "${NOTIFICATIONS_SERVICE_API_URL}"
+      CAPASHINO_SERVICE_ACCESS_TOKEN: "${CAPASHINO_SERVICE_ACCESS_TOKEN}"
+      KAFKA_TOPIC: "${KAFKA_TOPIC}"
+      KAFKA_BOOTSTRAP: "${KAFKA_BOOTSTRAP}"
     networks:
       - order_service_network
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # Kafka broker
-  kafka:
-    container_name: kafka
-    image: confluentinc/cp-kafka:7.5.0
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    ports:
-      - "29092:29092"  # External access from localhost
-      - "9092:9092"    # Internal Docker network access
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # External listener: for connections from host machine (localhost)
-      # Internal listener: for connections from Docker containers
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:29092,PLAINTEXT_INTERNAL://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_INTERNAL://0.0.0.0:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_LOG_RETENTION_HOURS: 168
-      KAFKA_LOG_SEGMENT_BYTES: 1073741824
-      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
-    networks:
-      - order_service_network
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
-volumes:
-  postgres_data:
+  # Worker container
+  workers:
+      container_name: order-service-workers
+      build:
+        context: .
+        dockerfile: Dockerfile
+      depends_on:
+        app:
+          condition: service_started
+      environment:
+        PROJECT_NAME: "${PROJECT_NAME}"
+        VERSION: "${VERSION}"
+        APP_PORT: "${APP_PORT}"
+        DEBUG: "${DEBUG}"
+        LOG_LEVEL: "${LOG_LEVEL}"
+        POSTGRES_DB: "${POSTGRES_DB}"
+        POSTGRES_USER: "${POSTGRES_USER}"
+        POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+        POSTGRES_PORT: "${POSTGRES_PORT}"
+        POSTGRES_HOST: "${POSTGRES_HOST}"
+        DATABASE_URL: "${DATABASE_URL}"
+        DB_POOL_SIZE: "${DB_POOL_SIZE}"
+        DB_MAX_OVERFLOW: "${DB_MAX_OVERFLOW}"
+        DB_POOL_TIMEOUT: "${DB_POOL_TIMEOUT}"
+        CATALOG_SERVICE_URL: "${CATALOG_SERVICE_URL}"
+        PAYMENTS_SERVICE_API_URL: "${PAYMENTS_SERVICE_API_URL}"
+        PAYMENTS_CALLBACK_URL: "${PAYMENTS_CALLBACK_URL}"
+        NOTIFICATIONS_SERVICE_API_URL: "${NOTIFICATIONS_SERVICE_API_URL}"
+        CAPASHINO_SERVICE_ACCESS_TOKEN: "${CAPASHINO_SERVICE_ACCESS_TOKEN}"
+        KAFKA_TOPIC: "${KAFKA_TOPIC}"
+        KAFKA_BOOTSTRAP: "${KAFKA_BOOTSTRAP}"
+      networks:
+        - order_service_network
+      restart: unless-stopped
+      command: ["/app/entrypoint.sh"]
 
 networks:
   order_service_network:
