@@ -41,7 +41,7 @@ def get_url():
             db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
         elif db_url.startswith("postgresql+asyncpg://"):
             db_url = db_url.replace("postgresql+asyncpg://", "postgresql://", 1)
-            config.set_main_option("sqlalchemy.url", db_url)
+        config.set_main_option("sqlalchemy.url", db_url)
         return db_url
 
     db_user = settings.postgres_user
