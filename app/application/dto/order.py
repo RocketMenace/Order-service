@@ -26,9 +26,7 @@ class OrderDTOResponse:
     id: UUID
     created_at: str
     updated_at: str
-    amount: Decimal | None = None
-
-    def to_dict(self):
+    amount: Decimal | None = None    def to_dict(self):
         data = asdict(self)
         for k, v in data.items():
             if isinstance(v, Decimal):
@@ -36,8 +34,6 @@ class OrderDTOResponse:
             if isinstance(v, UUID):
                 data[k] = str(v)
         return data
-
-
 @dataclass
 class OrderStatusDTO:
     order_id: UUID

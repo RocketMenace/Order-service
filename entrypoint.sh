@@ -2,6 +2,9 @@
 
 set -e
 
+echo "[ENTRYPOINT] Running database migrations..."
+alembic upgrade head
+
 echo "[ENTRYPOINT] Starting Order Service workers..."
 
 # Start run_kafka_consumer
@@ -39,7 +42,6 @@ SHIPPING_PID=$!
 echo "[ENTRYPOINT] run_outbox_shipping_worker started with PID: $SHIPPING_PID"
 
 echo "[ENTRYPOINT] All workers started successfully"
-echo "[ENTRYPOINT] Waiting for workers to complete..."
 
 # Function to handle shutdown
 cleanup() {
@@ -53,6 +55,10 @@ cleanup() {
 # Set up signal handlers
 trap cleanup SIGTERM SIGINT
 
-# Wait for all background processes
-wait
+# Start uvicorn server in foreground (main process)
+echo "[ENTRYPOINT] Starting uvicorn server..."
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --loop uvloop --http httptools || true
+
+# If uvicorn exits, cleanup workers
+cleanup
 
