@@ -36,7 +36,7 @@ class ShippingResponseUseCase:
                     event_type=EventTypeEnum.ORDER_SHIPPED,
                     status=OutboxEventStatusEnum.PENDING,
                     payload=NotificationRequest(
-                        message=f"Order has been shipped",
+                        message="Order has been shipped",
                         idempotency_key=str(uuid.uuid4()),
                     ),
                 )
@@ -54,7 +54,7 @@ class ShippingResponseUseCase:
                     event_type=EventTypeEnum.ORDER_CANCELLED,
                     status=OutboxEventStatusEnum.PENDING,
                     payload=NotificationRequest(
-                        message=f"Order has been cancelled",
+                        message="Order has been cancelled",
                         idempotency_key=str(uuid.uuid4()),
                     ),
                 )

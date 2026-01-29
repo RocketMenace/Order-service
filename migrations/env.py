@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -33,7 +32,9 @@ target_metadata = BaseModel.metadata
 def get_url():
     """Get database URL from environment variables or Settings"""
     # First, try to get DATABASE_URL directly
-    db_url = os.getenv("POSTGRES_CONNECTION_STRING")
+    # db_url = os.getenv("POSTGRES_CONNECTION_STRING")
+    settings = Settings()
+    db_url = settings.db_url
     if db_url:
         # Convert asyncpg URL to psycopg2 URL if needed
         if db_url.startswith("postgres://"):
@@ -43,16 +44,6 @@ def get_url():
             config.set_main_option("sqlalchemy.url", db_url)
         return db_url
 
-    # Otherwise, use Settings class which loads from .env file
-    settings = Settings()
-
-    # If db_url is set in settings, use it
-    if settings.db_url:
-        if settings.db_url.startswith("postgresql+asyncpg://"):
-            return settings.db_url.replace("postgresql+asyncpg://", "postgresql://")
-        return settings.db_url
-
-    # Fall back to constructing from individual settings
     db_user = settings.postgres_user
     db_pass = settings.postgres_password
     db_host = settings.postgres_host
