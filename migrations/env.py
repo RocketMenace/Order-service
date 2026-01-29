@@ -33,7 +33,7 @@ target_metadata = BaseModel.metadata
 def get_url():
     """Get database URL from environment variables or Settings"""
     # First, try to get DATABASE_URL directly
-    db_url = os.getenv("DATABASE_URL")
+    db_url = os.getenv("POSTGRES_CONNECTION_STRING")
     if db_url:
         # Convert asyncpg URL to psycopg2 URL if needed
         if db_url.startswith("postgresql+asyncpg://"):
