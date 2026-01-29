@@ -34,6 +34,3 @@ if __name__ == "__main__":
         print(f"Failed to start worker: {e}")
         logger.error("Failed to start worker", error=str(e))
         sys.exit(1)
-
-
-

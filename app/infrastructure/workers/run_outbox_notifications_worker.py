@@ -35,6 +35,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error("Failed to start worker", error=str(e))
         sys.exit(1)
-
-
-

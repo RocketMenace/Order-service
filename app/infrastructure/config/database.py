@@ -20,7 +20,6 @@ class Database:
         )
 
     def create_session(self) -> AsyncSession:
-        """Create a new database session without context manager."""
         return self._async_session()
 
     @asynccontextmanager
