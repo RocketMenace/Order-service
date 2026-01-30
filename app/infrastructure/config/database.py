@@ -8,11 +8,14 @@ from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
 
 class Database:
     def __init__(self, url: str) -> None:
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+psycopg://", 1)
+        elif url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
         self._async_engine = create_async_engine(
             url=url,
             pool_pre_ping=False,
             echo=True,
-            # isolation_level="REPEATABLE READ",
         )
         self._async_session = async_sessionmaker(
             bind=self._async_engine,
